@@ -24,7 +24,7 @@ const Button = ({
 }: ButtonProps) => {
   const base = `${
     disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-  } text-nowrap w-fit h-fit text-sm text-main flex justify-center items-center gap-1 rounded-sm px-2 py-1 sm:px-3 sm:py-2`;
+  } text-nowrap w-fit h-fit text-sm text-main flex justify-center items-center gap-1 rounded-sm px-3 py-2`;
   return (
     <button
       disabled={disabled}
