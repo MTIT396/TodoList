@@ -22,22 +22,27 @@ import TodoSkeleton from "./components/ui/TodoSkeleton";
 import { FAKE_SKELETON_TIME } from "./lib/constant";
 import TodoItem from "./components/TodoItem";
 import Stats from "./layouts/Stats";
+
 function App() {
   const { isOpen, setIsOpen } = useAddTodo();
-  const [todoList, setTodoList] = useState(() =>
-    getLocalStorageJSON<TodoType[]>("todoList", [])
-  );
+  const [todoList, setTodoList] = useState<TodoType[]>([]);
+  const [todoListTrigger, setTodoListTrigger] = useState<number>(0); // trigger refresh
   const [isOpenStats, setIsOpenStats] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [selectedTodo, setSelectedTodo] = useState<SelectDropDown | null>(null);
   const [selectedCategory, setSelectedCategory] =
     useState<SelectDropDown | null>(null);
-  const storeTodoList: TodoType[] = getLocalStorageJSON<[]>("todoList", []);
+
+  const storeTodoList: TodoType[] = getLocalStorageJSON<TodoType[]>(
+    "todoList",
+    []
+  );
   const completeList = todoList.filter((item) => item.isCompleted);
   const activeList = todoList.filter((item) => !item.isCompleted);
   const highPriority = todoList.filter(
     (todo) => todo.priority.title === "High"
   );
+
   // Default Data For LocalStorage
   useEffect(() => {
     const isInitialized = getLocalStorageJSON<boolean>("initialized", false);
@@ -61,20 +66,19 @@ function App() {
         { id: v4(), title: "Shopping" },
         { id: v4(), title: "Love" },
       ];
-      setLocalStorageJSON<SelectDropDown[]>("priority", priority);
-      setLocalStorageJSON<SelectDropDown[]>("todos", todos);
-      setLocalStorageJSON<SelectDropDown[]>("categories", categories);
-      // Init
-      setLocalStorageJSON<boolean>("initialized", true);
+      setLocalStorageJSON("priority", priority);
+      setLocalStorageJSON("todos", todos);
+      setLocalStorageJSON("categories", categories);
+      setLocalStorageJSON("initialized", true);
     }
   }, []);
+
   const defaultTodos = getLocalStorageJSON<SelectDropDown[]>("todos", []);
   const defaultCategories = getLocalStorageJSON<SelectDropDown[]>(
     "categories",
     []
   );
-
-  // Handle Filter TodoList
+  // Filter TodoList Handler
   const filteredTodoList = () => {
     let filtered = [...storeTodoList];
     if (selectedCategory && selectedCategory.title !== "All Categories") {
@@ -83,7 +87,7 @@ function App() {
       );
     }
     if (selectedTodo) {
-      switch (selectedTodo?.title) {
+      switch (selectedTodo.title) {
         case "Active":
           filtered = filtered.filter((item) => !item.isCompleted);
           break;
@@ -96,15 +100,19 @@ function App() {
     }
     return filtered;
   };
+
   useEffect(() => {
     const newFilteredList = filteredTodoList();
     setTodoList(newFilteredList);
-  }, [selectedTodo, selectedCategory]);
-  // Handle Function
+  }, [selectedTodo, selectedCategory, todoListTrigger]);
+
+  // Clear All Hanlder
   const handleClearAll = () => {
+    setLocalStorageJSON<TodoType[]>("todoList", []);
     setTodoList([]);
-    setLocalStorageJSON<[]>("todoList", []);
   };
+
+  // Search Handler
   const handleSearchTodo = (searchValue: string) => {
     setIsSearching(true);
     setTimeout(() => {
@@ -121,22 +129,22 @@ function App() {
       setIsSearching(false);
     }, FAKE_SKELETON_TIME);
   };
+  // Open Stats Handler
   const handleOpenStats = () => {
     setIsOpenStats(true);
   };
+
   return (
     <div className="bg-secondary transition duration-300">
       <div className="container sm:px-6 px-4 mx-auto flex flex-col w-full min-h-screen h-full font-poppins">
-        {/* Title */}
         <div className="my-4 text-center">
           <span className="text-4xl font-semibold text-main uppercase">
             Todo List App
           </span>
         </div>
-        {/* Card */}
         <div className="max-w-[980px] w-full mx-auto border border-border rounded-md shadow-2xl transition duration-300 bg-background">
           <Header total={todoList} completed={completeList} />
-          <div className="py-3 px-6 flex flex-col max-h-[680px]">
+          <div className="py-3 px-6 flex flex-col">
             <div className="flex items-center justify-between sm:flex-row flex-col gap-2">
               <div className="flex gap-2">
                 <span className="text-main">
@@ -179,13 +187,13 @@ function App() {
               <div className="flex items-center gap-3 w-full flex-wrap md:flex-nowrap">
                 <Select
                   onSelect={setSelectedTodo}
-                  label={defaultTodos[0]?.title || "No Data for Name"}
+                  label={defaultTodos[0]?.title || "No Data"}
                   selects={defaultTodos}
                   className="w-full sm:w-[180px] text-nowrap"
                 />
                 <Select
                   onSelect={setSelectedCategory}
-                  label={defaultCategories[0]?.title || "No Data for Name"}
+                  label={defaultCategories[0]?.title || "No Data"}
                   selects={defaultCategories}
                   className="w-full sm:w-[180px] text-nowrap"
                 />
@@ -198,28 +206,21 @@ function App() {
                 />
               </div>
             </div>
-            <ul className="overflow-auto scrollbar flex flex-col gap-2 min-h-[260px] ">
-              {isSearching ? (
-                <>
-                  {[...Array(3)].map((_, i) => (
-                    <TodoSkeleton key={i} />
+            <ul className="scrollbar flex flex-col gap-2 min-h-[260px] mb-3">
+              {isSearching
+                ? [...Array(3)].map((_, i) => <TodoSkeleton key={i} />)
+                : todoList.map((todo) => (
+                    <TodoItem
+                      key={todo.id}
+                      todo={todo}
+                      todoList={todoList}
+                      setTodoList={setTodoList}
+                    />
                   ))}
-                </>
-              ) : (
-                todoList.map((todo) => (
-                  <TodoItem
-                    key={todo.id}
-                    todo={todo}
-                    todoList={todoList}
-                    setTodoList={setTodoList}
-                  />
-                ))
-              )}
             </ul>
           </div>
         </div>
         <Footer />
-        {/* Modal Add Todo */}
         {isOpen && (
           <AnimatePresence>
             <motion.div
@@ -229,7 +230,7 @@ function App() {
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
             >
-              <AddTodo setTodoList={setTodoList} />
+              <AddTodo onAddSuccess={() => setTodoListTrigger((t) => t + 1)} />
             </motion.div>
           </AnimatePresence>
         )}
