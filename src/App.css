@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@theme {
+  --font-poppins: "Poppins", sans-serif;
+  --color-main: var(--color-main);
+  --color-secondary: var(--color-secondary);
+  --color-third: var(--color-third);
+  --color-text: var(--color-text);
+  --color-background: var(--color-background);
+  --color-border: var(--color-border);
+  --color-tab: var(--color-tab);
+  --color-new: #444;
+}
+
+:root {
+  --color-main: #000;
+  --color-secondary: #fff;
+  --color-third: #333;
+  --color-text: #fff;
+  --color-background: #fff;
+  --color-border: #ddd;
+  --color-tab: #fafafa;
+}
+
+.dark {
+  --color-main: #fff;
+  --color-secondary: #212121;
+  --color-third: #ddd;
+  --color-text: #333;
+  --color-background: #444;
+  --color-border: #ddd;
+  --color-tab: #333;
+}
+
+@layer utilities {
+  .scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: #f7f4ed;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 100vh;
+    border: 3px solid #f6f7ed;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+  }
+}
