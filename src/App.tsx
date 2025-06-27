@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import "./App.css";
 import { getLocalStorageJSON, setLocalStorageJSON } from "./utils/storageUtils";
@@ -12,8 +11,7 @@ import Select from "./components/Select";
 import { BsTrash } from "react-icons/bs";
 import Badge from "./components/ui/Badge";
 import type { SelectDropDown, Todo as TodoType } from "./lib/type";
-import { AnimatePresence } from "framer-motion";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import AddTodo from "./layouts/AddTodo";
 import useAddTodo from "./hooks/useAddTodo";
 import Header from "./layouts/Header";
@@ -22,28 +20,32 @@ import TodoSkeleton from "./components/ui/TodoSkeleton";
 import { FAKE_SKELETON_TIME } from "./lib/constant";
 import TodoItem from "./components/TodoItem";
 import Stats from "./layouts/Stats";
+import useFilteredTodos from "./hooks/useFilteredTodos";
 
 function App() {
   const { isOpen, setIsOpen } = useAddTodo();
-  const [todoList, setTodoList] = useState<TodoType[]>([]);
-  const [todoListTrigger, setTodoListTrigger] = useState<number>(0); // trigger refresh
+  const [todoListTrigger, setTodoListTrigger] = useState<number>(0);
   const [isOpenStats, setIsOpenStats] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchValue, setSearchValue] = useState<string>("");
   const [selectedTodo, setSelectedTodo] = useState<SelectDropDown | null>(null);
   const [selectedCategory, setSelectedCategory] =
     useState<SelectDropDown | null>(null);
 
-  const storeTodoList: TodoType[] = getLocalStorageJSON<TodoType[]>(
-    "todoList",
-    []
-  );
-  const completeList = todoList.filter((item) => item.isCompleted);
-  const activeList = todoList.filter((item) => !item.isCompleted);
-  const highPriority = todoList.filter(
+  // Custom Hook useFilteredTodos
+  const filteredTodoList = useFilteredTodos({
+    selectedCategory,
+    selectedTodo,
+    searchValue,
+    trigger: todoListTrigger,
+  });
+
+  const completeList = filteredTodoList.filter((item) => item.isCompleted);
+  const activeList = filteredTodoList.filter((item) => !item.isCompleted);
+  const highPriority = filteredTodoList.filter(
     (todo) => todo.priority.title === "High"
   );
-
-  // Default Data For LocalStorage
+  // Data For LocalStorage
   useEffect(() => {
     const isInitialized = getLocalStorageJSON<boolean>("initialized", false);
     if (!isInitialized) {
@@ -78,73 +80,35 @@ function App() {
     "categories",
     []
   );
-  // Filter TodoList Handler
-  const filteredTodoList = () => {
-    let filtered = [...storeTodoList];
-    if (selectedCategory && selectedCategory.title !== "All Categories") {
-      filtered = filtered.filter(
-        (item) => item.category.title === selectedCategory.title
-      );
-    }
-    if (selectedTodo) {
-      switch (selectedTodo.title) {
-        case "Active":
-          filtered = filtered.filter((item) => !item.isCompleted);
-          break;
-        case "Completed":
-          filtered = filtered.filter((item) => item.isCompleted);
-          break;
-        default:
-          break;
-      }
-    }
-    return filtered;
-  };
 
-  useEffect(() => {
-    const newFilteredList = filteredTodoList();
-    setTodoList(newFilteredList);
-  }, [selectedTodo, selectedCategory, todoListTrigger]);
-
-  // Clear All Hanlder
-  const handleClearAll = () => {
-    setLocalStorageJSON<TodoType[]>("todoList", []);
-    setTodoList([]);
-  };
-
-  // Search Handler
-  const handleSearchTodo = (searchValue: string) => {
+  const handleSearchTodo = (value: string) => {
     setIsSearching(true);
+    setSearchValue(value);
     setTimeout(() => {
-      const newFilteredList = filteredTodoList();
-      const cloneFilteredList = [...newFilteredList];
-      if (searchValue) {
-        const newTodoList = cloneFilteredList.filter((todo) =>
-          todo.text.toLowerCase().includes(searchValue.trim().toLowerCase())
-        );
-        setTodoList(newTodoList);
-      } else {
-        setTodoList(newFilteredList);
-      }
       setIsSearching(false);
     }, FAKE_SKELETON_TIME);
   };
-  // Open Stats Handler
-  const handleOpenStats = () => {
-    setIsOpenStats(true);
-  };
 
+  const handleOpenStats = () => setIsOpenStats(true);
+
+  const handleClearAll = () => {
+    setLocalStorageJSON<TodoType[]>("todoList", []);
+    setTodoListTrigger((t) => t + 1);
+  };
   return (
     <div className="bg-secondary transition duration-300">
       <div className="container sm:px-6 px-4 mx-auto flex flex-col w-full min-h-screen h-full font-poppins">
-        <div className="my-4 text-center">
+        <div className="py-4 mt-4 sm:mt-6 text-center">
           <span className="text-4xl font-semibold text-main uppercase">
             Todo List App
           </span>
         </div>
+
         <div className="max-w-[980px] w-full mx-auto border border-border rounded-md shadow-2xl transition duration-300 bg-background">
-          <Header total={todoList} completed={completeList} />
+          <Header total={filteredTodoList} completed={completeList} />
+
           <div className="py-3 px-6 flex flex-col">
+            {/* Top bar */}
             <div className="flex items-center justify-between sm:flex-row flex-col gap-2">
               <div className="flex gap-2">
                 <span className="text-main">
@@ -170,8 +134,10 @@ function App() {
                 <Theme />
               </div>
             </div>
+
+            {/* Stats */}
             <div className="flex gap-x-5 gap-y-4 justify-center sm:justify-normal py-3 mt-3 sm:mt-0 items-center flex-wrap">
-              <Badge text="Total" amount={todoList.length} />
+              <Badge text="Total" amount={filteredTodoList.length} />
               <Badge text="Active" amount={activeList.length} />
               <Badge text="Completed" amount={completeList.length} />
               {highPriority.length > 0 && (
@@ -182,6 +148,8 @@ function App() {
                 />
               )}
             </div>
+
+            {/* Filter & Search */}
             <div className="flex gap-4 w-full justify-between py-4 flex-wrap md:flex-nowrap">
               <SearchBar handleSearchTodo={handleSearchTodo} />
               <div className="flex items-center gap-3 w-full flex-wrap md:flex-nowrap">
@@ -198,7 +166,7 @@ function App() {
                   className="w-full sm:w-[180px] text-nowrap"
                 />
                 <Button
-                  disabled={!todoList.length}
+                  disabled={!filteredTodoList.length}
                   label="Clear All"
                   className="bg-red-500 text-white ml-auto"
                   icon={<BsTrash size={18} />}
@@ -206,21 +174,26 @@ function App() {
                 />
               </div>
             </div>
+
+            {/* Todo list */}
             <ul className="scrollbar flex flex-col gap-2 min-h-[260px] mb-3">
               {isSearching
-                ? [...Array(3)].map((_, i) => <TodoSkeleton key={i} />)
-                : todoList.map((todo) => (
+                ? [...Array(2)].map((_, i) => <TodoSkeleton key={i} />)
+                : filteredTodoList.map((todo) => (
                     <TodoItem
                       key={todo.id}
                       todo={todo}
-                      todoList={todoList}
-                      setTodoList={setTodoList}
+                      todoList={filteredTodoList}
+                      setTodoListTrigger={setTodoListTrigger}
                     />
                   ))}
             </ul>
           </div>
         </div>
+
         <Footer />
+
+        {/* Modals */}
         {isOpen && (
           <AnimatePresence>
             <motion.div
@@ -234,6 +207,7 @@ function App() {
             </motion.div>
           </AnimatePresence>
         )}
+
         {isOpenStats && (
           <AnimatePresence>
             <motion.div
@@ -243,7 +217,10 @@ function App() {
               exit={{ opacity: 0 }}
               onClick={() => setIsOpenStats(false)}
             >
-              <Stats setIsOpenStats={setIsOpenStats} todoList={todoList} />
+              <Stats
+                setIsOpenStats={setIsOpenStats}
+                todoList={filteredTodoList}
+              />
             </motion.div>
           </AnimatePresence>
         )}

@@ -6,10 +6,10 @@ import useDebounce from "../../hooks/useDebounce";
 const SearchBar = ({
   handleSearchTodo,
 }: {
-  handleSearchTodo: (searchValue: string) => void;
+  handleSearchTodo: (value: string) => void;
 }) => {
-  const [searchValue, setSearchValue] = useState<string>("");
-  const debounceValue = useDebounce(searchValue, 500);
+  const [searchBarValue, setSearchBarValue] = useState<string>("");
+  const debounceValue = useDebounce(searchBarValue, 500);
   useEffect(() => {
     handleSearchTodo(debounceValue);
   }, [debounceValue]);
@@ -19,7 +19,7 @@ const SearchBar = ({
         <IoSearchOutline size={20} />
       </span>
       <input
-        onChange={(e) => setSearchValue(e.target.value)}
+        onChange={(e) => setSearchBarValue(e.target.value)}
         type="text"
         placeholder="Search todos..."
         className="outline-none ml-5 w-full h-full px-2 py-1 placeholder:text-third text-main"
