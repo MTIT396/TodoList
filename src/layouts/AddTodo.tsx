@@ -50,7 +50,7 @@ const AddTodo = ({ onAddSuccess }: Props) => {
       category: selectCategory,
       isCompleted: false,
     };
-    setLocalStorageJSON("todoList", [...prev, newTodo]);
+    setLocalStorageJSON("todoList", [newTodo, ...prev]);
     if (onAddSuccess) onAddSuccess();
   };
 
